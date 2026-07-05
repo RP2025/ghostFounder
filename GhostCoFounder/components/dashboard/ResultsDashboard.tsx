@@ -1,45 +1,132 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { PitchDeckCard } from "@/components/artifacts/PitchDeckCard";
-import { MarketAnalysisCard } from "@/components/artifacts/MarketAnalysisCard";
-import { Card } from "@/components/ui/Card";
-import { Sparkles } from "lucide-react";
-import { GenerateResponse } from "@/types";
+import { PitchDeckPreview } from "@/components/artifacts/PitchDeckPreview";
+import { MarketPanel } from "@/components/artifacts/MarketPanel";
+import { MvpPreview } from "@/components/artifacts/MvpPreview";
+import { BusinessPanel } from "@/components/artifacts/BusinessPanel";
+import { LoopPanel } from "@/components/artifacts/LoopPanel";
+import { LedgerPanel } from "@/components/artifacts/LedgerPanel";
+import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import { HumanDecision, Snapshot } from "@/types/snapshot";
+import { PitchDeckSlide } from "@/types";
+import { Presentation } from "lucide-react";
 
 interface ResultsDashboardProps {
-  result: GenerateResponse;
+  snapshot: Snapshot;
+  busy: boolean;
+  onStep: (decisions: HumanDecision[]) => void;
+  onShip: () => void;
 }
 
-export function ResultsDashboard({ result }: ResultsDashboardProps) {
-  const { pitchDeck, marketAnalysis } = result;
+type Tab = "market" | "mvp" | "business" | "loop";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "market", label: "Market & Pitch" },
+  { id: "mvp", label: "MVP" },
+  { id: "business", label: "Business" },
+  { id: "loop", label: "Refinement Loop" },
+];
+
+export function ResultsDashboard({ snapshot, busy, onStep, onShip }: ResultsDashboardProps) {
+  const [tab, setTab] = useState<Tab>("market");
+  const [deckOpen, setDeckOpen] = useState(false);
+
+  const { market, product, business, ledger } = snapshot;
+
+  const brandName = business?.brand?.name || deriveName(snapshot.intake.idea);
+  const tagline =
+    business?.brand?.tagline || market?.analysis.trend || "Your AI-generated startup.";
+
+  // Map backend deck slides -> the existing PitchDeckPreview shape.
+  const slides: PitchDeckSlide[] = useMemo(() => {
+    const s = market?.pitch_deck.slides ?? [];
+    return s.map((sl, i) => ({
+      label: `${String(i + 1).padStart(2, "0")} · ${sl.title}`,
+      title: sl.title,
+      subtitle: sl.speaker_note || undefined,
+      bullets: sl.bullets,
+    }));
+  }, [market]);
 
   return (
-    <section className="mx-auto min-h-screen w-full max-w-4xl px-6 py-14 md:px-10">
-      <DashboardHeader startupName={marketAnalysis.startup_name} tagline={marketAnalysis.tagline} />
-
-      <div className="mb-6 grid gap-5 md:grid-cols-2">
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <PitchDeckCard artifact={pitchDeck} />
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="flex h-full flex-col justify-center p-6">
-            <div className="mb-2 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ghost-violet/[0.14]">
-                <Sparkles size={18} className="text-ghost-violet" />
-              </span>
-              <h3 className="font-semibold">Quick Market Analysis</h3>
-            </div>
-            <p className="text-sm text-ink-muted">
-              A section-by-section breakdown of your opportunity, generated from your answers — see below.
-            </p>
-          </Card>
-        </motion.div>
+    <section className="mx-auto min-h-screen w-full max-w-5xl px-6 py-12 md:px-10">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <DashboardHeader startupName={brandName} tagline={tagline} />
+        {slides.length > 0 && (
+          <Button variant="outline" onClick={() => setDeckOpen(true)}>
+            <Presentation size={15} />
+            View Pitch Deck
+          </Button>
+        )}
       </div>
 
-      <MarketAnalysisCard analysis={marketAnalysis} />
+      {/* tab nav */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "rounded-xl px-4 py-2 text-sm transition-colors",
+              tab === t.id
+                ? "bg-ghost-gradient-btn font-medium text-[#08080f]"
+                : "glass-panel text-ink-muted hover:text-ink"
+            )}
+          >
+            {t.label}
+            {t.id === "loop" && (
+              <span className="ml-2 font-mono text-[10px] opacity-70">
+                {snapshot.iteration}/{snapshot.max_iterations}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <motion.div
+        key={tab}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+      >
+        {tab === "market" && market && <MarketPanel market={market} />}
+        {tab === "mvp" && product && <MvpPreview product={product} />}
+        {tab === "business" && business && <BusinessPanel business={business} />}
+        {tab === "loop" && business && (
+          <div className="space-y-5">
+            <LoopPanel
+              key={snapshot.iteration}
+              business={business}
+              iteration={snapshot.iteration}
+              maxIterations={snapshot.max_iterations}
+              status={snapshot.status}
+              canContinue={snapshot.can_continue}
+              busy={busy}
+              onStep={onStep}
+              onShip={onShip}
+            />
+            <LedgerPanel ledger={ledger} />
+          </div>
+        )}
+      </motion.div>
+
+      <PitchDeckPreview
+        open={deckOpen}
+        onClose={() => setDeckOpen(false)}
+        slides={slides}
+        fileName={`${brandName.replace(/\s+/g, "_")}_Pitch_Deck.pptx`}
+        downloadUrl="/mock-assets/pitch-deck-placeholder.pptx"
+      />
     </section>
   );
+}
+
+function deriveName(idea: string): string {
+  const words = (idea || "Nova Venture").trim().split(/\s+/).slice(0, 2);
+  const camel = words.map((w) => (w[0]?.toUpperCase() ?? "") + w.slice(1).toLowerCase()).join("");
+  return camel.length > 2 ? camel : "Nova";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AmbientBackground } from "@/components/layout/AmbientBackground";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -8,28 +8,64 @@ import { Hero } from "@/components/landing/Hero";
 import { WizardContainer } from "@/components/wizard/WizardContainer";
 import { ProcessingScreen } from "@/components/processing/ProcessingScreen";
 import { ResultsDashboard } from "@/components/dashboard/ResultsDashboard";
-import { generateStartupPlan } from "@/services/generateService";
-import { GenerateResponse, WizardAnswers } from "@/types";
+import { Button } from "@/components/ui/Button";
+import {
+  generateStartup,
+  shipStartup,
+  stepLoop,
+} from "@/services/orchestratorClient";
+import { HumanDecision, Snapshot } from "@/types/snapshot";
+import { WizardAnswers } from "@/types";
 
 type Screen = "landing" | "wizard" | "processing" | "dashboard";
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("landing");
-  const [answers, setAnswers] = useState<WizardAnswers | null>(null);
-  const [result, setResult] = useState<GenerateResponse | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [animDone, setAnimDone] = useState(false); // processing animation finished
+  const [busy, setBusy] = useState(false); // a loop step / ship is in flight
 
-  const handleWizardComplete = (finalAnswers: WizardAnswers) => {
-    setAnswers(finalAnswers);
+  // Advance to the dashboard only once BOTH the intro animation has played
+  // and the (slow) backend has returned — so we never flash an empty screen.
+  useEffect(() => {
+    if (screen === "processing" && animDone && (snapshot || error)) {
+      setScreen("dashboard");
+    }
+  }, [screen, animDone, snapshot, error]);
+
+  const handleWizardComplete = (answers: WizardAnswers) => {
+    setSnapshot(null);
+    setError(null);
+    setAnimDone(false);
     setScreen("processing");
-    // Fire the request now; the processing screen's own timeline is
-    // frontend-timed and independent, so this resolves in the background.
-    generateStartupPlan(finalAnswers).then(setResult);
+    generateStartup(answers)
+      .then(setSnapshot)
+      .catch((e: Error) => setError(e.message));
   };
 
-  const handleProcessingFinished = () => {
-    // In the rare case the request is still in flight, this still works:
-    // result will be set moments later and the dashboard renders once ready.
-    setScreen("dashboard");
+  const handleStep = (decisions: HumanDecision[]) => {
+    if (!snapshot) return;
+    setBusy(true);
+    stepLoop(snapshot.session_id, decisions)
+      .then(setSnapshot)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setBusy(false));
+  };
+
+  const handleShip = () => {
+    if (!snapshot) return;
+    setBusy(true);
+    shipStartup(snapshot.session_id)
+      .then(setSnapshot)
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setBusy(false));
+  };
+
+  const reset = () => {
+    setSnapshot(null);
+    setError(null);
+    setScreen("landing");
   };
 
   return (
@@ -55,29 +91,38 @@ export default function Home() {
 
           {screen === "processing" && (
             <motion.div key="processing" exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-              <ProcessingScreen onFinished={handleProcessingFinished} />
+              <ProcessingScreen onFinished={() => setAnimDone(true)} />
             </motion.div>
           )}
 
-          {screen === "dashboard" && result && (
+          {screen === "dashboard" && error && (
+            <motion.div
+              key="dashboard-error"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center"
+            >
+              <p className="font-display text-lg">Something went wrong</p>
+              <p className="max-w-md font-mono text-sm text-ink-muted">{error}</p>
+              <Button variant="outline" onClick={reset}>
+                Start over
+              </Button>
+            </motion.div>
+          )}
+
+          {screen === "dashboard" && !error && snapshot && (
             <motion.div
               key="dashboard"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
             >
-              <ResultsDashboard result={result} />
-            </motion.div>
-          )}
-
-          {screen === "dashboard" && !result && (
-            <motion.div
-              key="dashboard-fallback"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex min-h-screen items-center justify-center"
-            >
-              <p className="font-mono text-sm text-ink-muted">Finalizing your startup plan…</p>
+              <ResultsDashboard
+                snapshot={snapshot}
+                busy={busy}
+                onStep={handleStep}
+                onShip={handleShip}
+              />
             </motion.div>
           )}
         </AnimatePresence>
