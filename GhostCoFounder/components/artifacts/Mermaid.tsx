@@ -7,6 +7,7 @@ mermaid.initialize({
   startOnLoad: false,
   theme: "dark",
   securityLevel: "loose",
+  suppressErrorRendering: true, // never inject the "bomb" error graphic into the DOM
   themeVariables: {
     fontFamily: "var(--font-jetbrains-mono), monospace",
     primaryColor: "#1a1a2e",
@@ -17,10 +18,18 @@ mermaid.initialize({
   },
 });
 
+/** Strip common LLM artifacts (code fences, stray leading text) from a diagram. */
+function clean(chart: string): string {
+  let c = (chart || "").trim();
+  c = c.replace(/^```(?:mermaid)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  return c;
+}
+
 /**
- * Renders a Mermaid diagram string (erDiagram / flowchart) from the Product
- * Agent. If the string fails to parse, we surface a graceful fallback instead
- * of a broken render (per docs/000 §5).
+ * Renders a Mermaid diagram (erDiagram / flowchart) from the Product Agent.
+ * We validate with mermaid.parse first (suppressErrors) and only render valid
+ * input, so a malformed AI diagram shows the fallback instead of a broken
+ * "Syntax error" graphic (per docs/000 §5).
  */
 export function Mermaid({ chart, fallback }: { chart: string; fallback?: React.ReactNode }) {
   const rawId = useId();
@@ -30,21 +39,28 @@ export function Mermaid({ chart, fallback }: { chart: string; fallback?: React.R
 
   useEffect(() => {
     let cancelled = false;
-    if (!chart?.trim()) {
-      setFailed(true);
-      return;
-    }
-    mermaid
-      .render(id, chart)
-      .then(({ svg }) => {
+    const run = async () => {
+      const text = clean(chart);
+      if (!text) {
+        setFailed(true);
+        return;
+      }
+      try {
+        const valid = await mermaid.parse(text, { suppressErrors: true });
+        if (!valid) {
+          if (!cancelled) setFailed(true);
+          return;
+        }
+        const { svg } = await mermaid.render(id, text);
         if (!cancelled && ref.current) {
           ref.current.innerHTML = svg;
           setFailed(false);
         }
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setFailed(true);
-      });
+      }
+    };
+    run();
     return () => {
       cancelled = true;
     };
@@ -58,5 +74,10 @@ export function Mermaid({ chart, fallback }: { chart: string; fallback?: React.R
     );
   }
 
-  return <div ref={ref} className="mermaid-container overflow-x-auto [&_svg]:mx-auto [&_svg]:max-w-full" />;
+  return (
+    <div
+      ref={ref}
+      className="mermaid-container overflow-x-auto [&_svg]:mx-auto [&_svg]:max-w-full"
+    />
+  );
 }
