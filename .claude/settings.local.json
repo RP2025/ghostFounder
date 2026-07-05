@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell(npm install --prefix d:\\\\GhostCoFounder\\\\GhostCoFounder 2>&1)",
+      "PowerShell(Set-Location d:\\\\GhostCoFounder\\\\GhostCoFounder; $env:NEXT_TELEMETRY_DISABLED=1; npm run build 2>&1 | Select-Object -Last 45)",
+      "PowerShell(Set-Location d:\\\\GhostCoFounder\\\\GhostCoFounder; $env:NEXT_TELEMETRY_DISABLED=1; npm run dev)"
+    ]
+  }
+}

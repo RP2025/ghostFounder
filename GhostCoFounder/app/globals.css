@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme tokens as RGB channel triplets so Tailwind's `<alpha-value>` and
+ * opacity modifiers (e.g. text-ink/80, bg-void) resolve correctly.
+ * The .dark / .light classes on <html> swap the whole palette. Accent
+ * colors (ghost-*) stay fixed and read well on both surfaces.
+ */
+:root,
+.dark {
+  --void: 7 7 11;
+  --void-light: 14 14 22;
+
+  --ink: 245 245 247;
+  --ink-muted: 154 154 176;
+  --ink-faint: 92 92 112;
+
+  /* Small-accent color (bullets, labels, tiny icons) — cyan pops on dark */
+  --accent: 76 224 248;
+
+  /* Glassmorphism surface */
+  --glass-bg: 255 255 255;
+  --glass-bg-alpha: 0.035;
+  --glass-border: 255 255 255;
+  --glass-border-alpha: 0.08;
+  --glass-shadow: 0 0 0 1px rgba(255, 255, 255, 0);
+
+  /* Ambient texture */
+  --grain: 255 255 255;
+  --mesh-opacity: 0.6;
+  --grain-opacity: 0.4;
+
+  color-scheme: dark;
+}
+
+.light {
+  --void: 244 245 251;
+  --void-light: 255 255 255;
+
+  --ink: 21 22 34;
+  --ink-muted: 88 90 112;
+  --ink-faint: 138 140 160;
+
+  /* On white cards, violet keeps contrast where cyan would wash out */
+  --accent: 111 76 235;
+
+  /* Frosted white cards over the light surface */
+  --glass-bg: 255 255 255;
+  --glass-bg-alpha: 0.72;
+  --glass-border: 20 22 55;
+  --glass-border-alpha: 0.09;
+  --glass-shadow: 0 8px 32px -12px rgba(30, 30, 90, 0.18);
+
+  --grain: 40 40 90;
+  --mesh-opacity: 0.55;
+  --grain-opacity: 0.25;
+
+  color-scheme: light;
+}
+
+html,
+body {
+  background: rgb(var(--void));
+  color: rgb(var(--ink));
+}
+
+* {
+  scrollbar-color: rgba(124, 92, 252, 0.35) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 92, 252, 0.35);
+  border-radius: 8px;
+}
+
+@layer components {
+  .glass-panel {
+    background: rgb(var(--glass-bg) / var(--glass-bg-alpha));
+    border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+    box-shadow: var(--glass-shadow);
+    @apply backdrop-blur-xl rounded-2xl;
+  }
+
+  .glow-ring {
+    @apply shadow-glow;
+  }
+
+  .bg-grain {
+    background-image: radial-gradient(rgb(var(--grain) / 0.5) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+}
+
+/* Smooth the palette swap when toggling themes */
+html.theme-anim,
+html.theme-anim body,
+html.theme-anim .glass-panel {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+/* Respect reduced-motion preferences across the app */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
