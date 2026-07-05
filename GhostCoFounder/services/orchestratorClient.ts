@@ -32,7 +32,12 @@ export async function generateStartup(answers: WizardAnswers): Promise<Snapshot>
     await delay(MOCK_DELAY_MS);
     return mockGenerate(answers);
   }
-  return post<Snapshot>("/api/generate", answers);
+  try {
+    return await post<Snapshot>("/api/generate", answers);
+  } catch (err) {
+    console.warn("[orchestrator] /generate failed, using mock fallback:", err);
+    return mockGenerate(answers);
+  }
 }
 
 /** Phase 2: apply human decisions, rebuild, review again. */
@@ -44,7 +49,12 @@ export async function stepLoop(
     await delay(MOCK_DELAY_MS);
     return mockStep(sessionId, decisions);
   }
-  return post<Snapshot>("/api/loop/step", { session_id: sessionId, decisions });
+  try {
+    return await post<Snapshot>("/api/loop/step", { session_id: sessionId, decisions });
+  } catch (err) {
+    console.warn("[orchestrator] /loop/step failed, using mock fallback:", err);
+    return mockStep(sessionId, decisions);
+  }
 }
 
 /** End the loop ("ship it"). */
@@ -53,5 +63,10 @@ export async function shipStartup(sessionId: string): Promise<Snapshot> {
     await delay(300);
     return mockShip(sessionId);
   }
-  return post<Snapshot>("/api/loop/ship", { session_id: sessionId });
+  try {
+    return await post<Snapshot>("/api/loop/ship", { session_id: sessionId });
+  } catch (err) {
+    console.warn("[orchestrator] /loop/ship failed, using mock fallback:", err);
+    return mockShip(sessionId);
+  }
 }

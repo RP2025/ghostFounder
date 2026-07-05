@@ -70,7 +70,7 @@ export function Hero({ onStart }: HeroProps) {
         </motion.p>
 
         <motion.div variants={item}>
-          <Button onClick={onStart} className="group mt-2 px-7 py-3.5 text-base">
+          <Button onClick={onStart} className="group neon-ring mt-2 px-7 py-3.5 text-base">
             <Sparkles size={17} className="transition-transform group-hover:rotate-12" />
             Start Building
             <ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1" />
@@ -78,7 +78,7 @@ export function Hero({ onStart }: HeroProps) {
         </motion.div>
 
         <motion.p variants={item} className="mt-4 font-mono text-xs tracking-wide text-ink-faint">
-          The co-founder that never sleeps · no credit card
+          The co-founder that never sleeps · <span className="neon-text text-accent">no credit card</span>
         </motion.p>
       </motion.div>
 

@@ -132,6 +132,33 @@ body {
     background-clip: text;
     color: transparent;
     animation: shimmer 6s linear infinite;
+    /* Neon aura behind the gradient text */
+    filter: drop-shadow(0 0 18px rgba(124, 92, 252, 0.55))
+      drop-shadow(0 0 34px rgba(76, 224, 248, 0.35));
+  }
+
+  /* Neon glow ring — pulses a colored halo around an element */
+  .neon-ring {
+    box-shadow: 0 0 0 1px rgba(124, 92, 252, 0.5),
+      0 0 22px -2px rgba(124, 92, 252, 0.65), 0 0 46px -6px rgba(76, 224, 248, 0.5);
+    animation: neon-pulse 3.4s ease-in-out infinite;
+  }
+
+  /* Neon text — for small accent labels */
+  .neon-text {
+    text-shadow: 0 0 8px rgba(76, 224, 248, 0.7), 0 0 18px rgba(124, 92, 252, 0.5);
+  }
+}
+
+@keyframes neon-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(124, 92, 252, 0.45),
+      0 0 18px -3px rgba(124, 92, 252, 0.55), 0 0 38px -8px rgba(76, 224, 248, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(76, 224, 248, 0.6),
+      0 0 30px 0 rgba(124, 92, 252, 0.7), 0 0 60px -4px rgba(76, 224, 248, 0.6);
   }
 }
 
