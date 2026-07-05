@@ -29,9 +29,9 @@ const config: Config = {
         accent: "rgb(var(--accent) / <alpha-value>)",
       },
       fontFamily: {
-        display: ["var(--font-space-grotesk)", "sans-serif"],
-        body: ["var(--font-inter)", "sans-serif"],
-        mono: ["var(--font-jetbrains-mono)", "monospace"],
+        display: ["var(--font-display)", "ui-sans-serif", "sans-serif"],
+        body: ["var(--font-body)", "ui-sans-serif", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       borderRadius: {
         "2xl": "1rem",
@@ -55,10 +55,38 @@ const config: Config = {
         spin_slow: {
           to: { transform: "rotate(360deg)" },
         },
+        aurora1: {
+          "0%, 100%": { transform: "translate(0,0) scale(1)" },
+          "50%": { transform: "translate(10%, 14%) scale(1.15)" },
+        },
+        aurora2: {
+          "0%, 100%": { transform: "translate(0,0) scale(1.05)" },
+          "50%": { transform: "translate(-12%, 8%) scale(0.95)" },
+        },
+        aurora3: {
+          "0%, 100%": { transform: "translate(0,0) scale(1)" },
+          "50%": { transform: "translate(8%, -12%) scale(1.2)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
+        "float-x": {
+          "0%, 100%": { transform: "translateX(0)" },
+          "50%": { transform: "translateX(10px)" },
+        },
+        shimmer: {
+          to: { backgroundPosition: "200% center" },
+        },
       },
       animation: {
         breathe: "breathe 3.2s ease-in-out infinite",
         "spin-slow": "spin_slow 8s linear infinite",
+        "aurora-1": "aurora1 20s ease-in-out infinite",
+        "aurora-2": "aurora2 24s ease-in-out infinite",
+        "aurora-3": "aurora3 28s ease-in-out infinite",
+        float: "float 6s ease-in-out infinite",
+        "float-x": "float-x 7s ease-in-out infinite",
       },
     },
   },

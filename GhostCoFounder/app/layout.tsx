@@ -1,23 +1,27 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Sora, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+// Sora — a premium geometric display face used across modern AI products.
+const sora = Sora({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-space-grotesk",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-display",
+  display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
-  variable: "--font-inter",
+  variable: "--font-body",
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -50,7 +54,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${sora.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
